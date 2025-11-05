@@ -30254,6 +30254,7 @@ const core = __nccwpck_require__(7484);
 const fs = __nccwpck_require__(9896);
 const path = __nccwpck_require__(6928);
 const axios = __nccwpck_require__(7269);
+const os = __nccwpck_require__(857);
 
 /**
  * Checks if Maven is available in the environment
@@ -30385,7 +30386,7 @@ async function run() {
     const clientSecret = core.getInput('client-secret', { required: true });
     const scope = '';
     const serverId = 'curity-repo';
-    const settingsPath = path.join(process.env.RUNNER_TEMP || '/.m2', 'settings.xml');
+    const settingsPath = path.join(os.homedir(), '.m2', 'settings.xml');
     
     // Validate inputs
     if (!clientSecret.trim()) {
