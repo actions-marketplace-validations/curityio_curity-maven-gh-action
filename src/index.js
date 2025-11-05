@@ -78,20 +78,17 @@ async function getAccessToken(tokenEndpoint, clientId, clientSecret, scope) {
 /**
  * Creates Maven settings.xml file with the access token
  */
-function createMavenSettings(accessToken, serverId, settingsPath) {
+function createMavenSettings(accessToken, serverId, uploadServerId, settingsPath) {
   core.info(`Creating Maven settings.xml at: ${settingsPath}`);
-  
+
   const settingsXml = `<?xml version="1.0" encoding="UTF-8"?>
 <settings xmlns="http://maven.apache.org/SETTINGS/1.2.0"
           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
           xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.2.0 
                               http://maven.apache.org/xsd/settings-1.2.0.xsd">
-    <mirrors>
-        <mirror>
+    <servers>
+        <server>
         <id>${serverId}</id>
-        <name>Curity Maven Repository</name>
-        <url>https://hub.curityio.net/repository/curity-release-repo/</url>
-        <mirrorOf>*</mirrorOf>
         <configuration>
             <httpHeaders>
             <property>
@@ -100,6 +97,25 @@ function createMavenSettings(accessToken, serverId, settingsPath) {
             </property>
             </httpHeaders>
         </configuration>
+        </server>
+        <server>
+        <id>${uploadServerId}</id>
+        <configuration>
+            <httpHeaders>
+            <property>
+                <name>Authorization</name>
+                <value>Bearer ${accessToken}</value>
+            </property>
+            </httpHeaders>
+        </configuration>
+        </server>
+    </servers>
+    <mirrors>
+        <mirror>
+        <id>${serverId}</id>
+        <name>Curity Maven Repository</name>
+        <url>https://hub.curityio.net/repository/curity-release-repo/</url>
+        <mirrorOf>*</mirrorOf>
         </mirror>
     </mirrors>
 </settings>`;
@@ -135,7 +151,10 @@ async function run() {
     const scope = '';
     const serverId = 'curity-repo';
     const settingsPath = path.join(os.homedir(), '.m2', 'settings.xml');
-    
+
+    const uploadServerId = 'curity-upload-repo';
+    const uploadServerUrl = 'https://hub.curityio.net/repository/customer-release-repo/';
+
     // Validate inputs
     if (!clientSecret.trim()) {
       throw new Error('client-secret cannot be empty');
@@ -145,15 +164,17 @@ async function run() {
     const accessToken = await getAccessToken(oauthServerUrl, clientId, clientSecret, scope);
     
     // Create Maven settings
-    const createdSettingsPath = createMavenSettings(accessToken, serverId, settingsPath);
+    const createdSettingsPath = createMavenSettings(accessToken, serverId, uploadServerId, settingsPath);
     
     // Set outputs
     core.setOutput('settings-file', createdSettingsPath);
     core.setSecret(accessToken); // Mask the token in logs
     core.setOutput('access-token', accessToken);
-    
-    core.info('Action completed successfully');
-    
+
+    const mavenDeployArgs = `-DaltDeploymentRepository={${uploadServerId}}::default::${uploadServerUrl}`;
+    core.setOutput('maven-deploy-args', mavenDeployArgs);
+
+    core.info('Action completed successfully');    
   } catch (error) {
     core.setFailed(`Action failed: ${error.message}`);
   }

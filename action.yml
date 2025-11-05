@@ -14,6 +14,9 @@ outputs:
   access-token:
     description: 'The obtained access token (masked in logs)'
     value: ${{ steps.setup-maven.outputs.access-token }}
+  maven-deploy-args:
+    description: 'The Maven arguments for deploying to the repository'
+    value: ${{ steps.setup-maven.outputs.maven-deploy-args }}
 
 runs:
   using: 'node20'

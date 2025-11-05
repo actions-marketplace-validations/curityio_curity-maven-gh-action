@@ -38,13 +38,14 @@ describe('Maven OAuth Action', () => {
       const accessToken = 'test-token-123';
       const serverId = 'test-server';
       const settingsPath = '/tmp/settings.xml';
-      
+      const uploadServerId = 'test-upload-server';
+
       // Mock fs functions
       fs.existsSync.mockReturnValue(true);
-      fs.writeFileSync.mockImplementation(() => {});
-      
-      const result = createMavenSettings(accessToken, serverId, settingsPath);
-      
+      fs.writeFileSync.mockImplementation(() => { });
+
+      const result = createMavenSettings(accessToken, serverId, uploadServerId, settingsPath);
+
       expect(result).toBe(settingsPath);
       expect(fs.writeFileSync).toHaveBeenCalledWith(
         settingsPath,
@@ -52,27 +53,25 @@ describe('Maven OAuth Action', () => {
         'utf8'
       );
       expect(fs.writeFileSync).toHaveBeenCalledWith(
-          settingsPath,
-          expect.stringContaining(`<value>Bearer ${accessToken}</value>`),
+        settingsPath,
+        expect.stringContaining(`<value>Bearer ${accessToken}</value>`),
         'utf8'
       );
     });
-
     it('should create directory if it does not exist', () => {
       const accessToken = 'test-token';
       const serverId = 'test-server';
       const settingsPath = '/new/path/settings.xml';
-      
+
       fs.existsSync.mockReturnValue(false);
       fs.mkdirSync.mockImplementation(() => {});
       fs.writeFileSync.mockImplementation(() => {});
-      
-      createMavenSettings(accessToken, serverId, settingsPath);
-      
+
+      createMavenSettings(accessToken, serverId, 'server-id', settingsPath);
+
       expect(fs.mkdirSync).toHaveBeenCalledWith('/new/path', { recursive: true });
     });
   });
-
   describe('getAccessToken', () => {
     it('should successfully obtain access token', async () => {
       const mockResponse = {
@@ -83,16 +82,16 @@ describe('Maven OAuth Action', () => {
           expires_in: 3600
         }
       };
-      
+
       mockedAxios.post.mockResolvedValue(mockResponse);
-      
+
       const token = await getAccessToken(
         'https://oauth.example.com/token',
         'client-id',
         'client-secret',
         'scope'
       );
-      
+
       expect(token).toBe('mock-access-token');
       expect(mockedAxios.post).toHaveBeenCalledWith(
         'https://oauth.example.com/token',
@@ -113,9 +112,9 @@ describe('Maven OAuth Action', () => {
           data: { error: 'invalid_client' }
         }
       };
-      
+
       mockedAxios.post.mockRejectedValue(mockError);
-      
+
       await expect(getAccessToken(
         'https://oauth.example.com/token',
         'invalid-client',
@@ -129,9 +128,9 @@ describe('Maven OAuth Action', () => {
         request: {},
         message: 'Network Error'
       };
-      
+
       mockedAxios.post.mockRejectedValue(mockError);
-      
+
       await expect(getAccessToken(
         'https://oauth.example.com/token',
         'client-id',
@@ -145,19 +144,19 @@ describe('Maven OAuth Action', () => {
         status: 200,
         data: { access_token: 'mock-token' }
       };
-      
+
       mockedAxios.post.mockResolvedValue(mockResponse);
-      
+
       await getAccessToken(
         'https://oauth.example.com/token',
         'client-id',
         'client-secret',
         'read write'
       );
-      
+
       const callArgs = mockedAxios.post.mock.calls[0];
       const formData = callArgs[1];
-      
+
       expect(formData.get('scope')).toBe('read write');
     });
   });
