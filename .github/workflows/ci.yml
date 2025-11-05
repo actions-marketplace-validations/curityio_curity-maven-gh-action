@@ -1,0 +1,72 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [18, 20]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Run linter
+        run: npm run lint
+        
+      - name: Run tests
+        run: npm test
+        
+      - name: Build action
+        run: npm run build
+        
+      - name: Check if dist is up to date
+        run: |
+          if [ -n "$(git status --porcelain dist/)" ]; then
+            echo "::error::dist/ directory is not up to date. Run 'npm run build' and commit the changes."
+            exit 1
+          fi
+
+  integration-test:
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Java and Maven
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          
+      - name: Test action with mock OAuth server
+        id: test-action
+        uses: ./
+        with:
+          oauth-server-url: 'https://httpbin.org/post'  # Mock endpoint for testing
+          client-id: 'test-client'
+          client-secret: 'test-secret'
+          scope: 'test-scope'
+          maven-server-id: 'test-server'
+        continue-on-error: true  # Expected to fail with mock server
+        
+      - name: Verify Maven is available
+        run: mvn --version

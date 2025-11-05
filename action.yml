@@ -1,0 +1,26 @@
+name: 'Setup Maven with OAuth Access Token'
+description: 'Creates Maven settings.xml with access token obtained via OAuth client credentials flow'
+author: 'Your Name'
+
+inputs:
+  client-secret:
+    description: 'OAuth client secret'
+    required: true
+
+outputs:
+  settings-file:
+    description: 'Path to the created Maven settings.xml file'
+    value: ${{ steps.setup-maven.outputs.settings-file }}
+  access-token:
+    description: 'The obtained access token (masked in logs)'
+    value: ${{ steps.setup-maven.outputs.access-token }}
+
+runs:
+  using: 'node20'
+  main: 'dist/index.js'
+  post: 'dist/cleanup/index.js'
+  post-if: 'always()'
+
+branding:
+  icon: 'lock'
+  color: 'blue'

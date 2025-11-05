@@ -1,0 +1,43 @@
+name: Example Usage
+
+on:
+  workflow_dispatch:  # Manual trigger for testing
+
+jobs:
+  example:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      # Required: Setup Java and Maven environment
+      - name: Set up JDK 17 with Maven
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          
+      # Use the OAuth Maven action
+      - name: Setup Maven with OAuth
+        id: maven-oauth
+        uses: ./  # Use the local action (in a real scenario, use the published action)
+        with:
+          oauth-server-url: ${{ secrets.OAUTH_SERVER_URL }}
+          client-id: ${{ secrets.OAUTH_CLIENT_ID }}
+          client-secret: ${{ secrets.OAUTH_CLIENT_SECRET }}
+          scope: 'maven:read maven:write'
+          maven-server-id: 'my-private-repo'
+          
+      # Example usage with the generated settings
+      - name: Verify Maven configuration
+        run: |
+          echo "Settings file created at: ${{ steps.maven-oauth.outputs.settings-file }}"
+          cat ${{ steps.maven-oauth.outputs.settings-file }}
+          
+      # Example Maven command using the settings
+      - name: Run Maven with OAuth settings
+        run: |
+          # This would normally connect to your private repository
+          # mvn clean compile -s ${{ steps.maven-oauth.outputs.settings-file }}
+          echo "Maven would use settings file: ${{ steps.maven-oauth.outputs.settings-file }}"
