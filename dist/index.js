@@ -30423,7 +30423,7 @@ async function run() {
     core.setSecret(accessToken); // Mask the token in logs
     core.setOutput('access-token', accessToken);
 
-    const mavenDeployArgs = `-DaltDeploymentRepository={${uploadServerId}}::default::${uploadServerUrl}`;
+    const mavenDeployArgs = `-DaltDeploymentRepository=${uploadServerId}::default::${uploadServerUrl}`;
     core.setOutput('maven-deploy-args', mavenDeployArgs);
 
     core.info('Action completed successfully');    
